@@ -18,6 +18,7 @@ class Particle(object):
         self.npoints = npoints
         self.tarray = np.linspace(0.0, tf, npoints, endpoint=True)  # include final timepoint
         self.xv0 = np.ravel(np.array([self.x, self.v]))  # NumPy array with initial position and velocity
+        self.in_net = False
 
     def reinitialize(self):
         self.npoints = int(self.tf / self.dt)
@@ -44,11 +45,12 @@ class Particle(object):
 
         if self.x[2] > 0:  # if above ground....
             if 11.89-0.01<= self.x[1] <= 11.89+0.01 and self.x[2] <= 0.94:  # if hit net
-                1+1
+                self.in_net = True
             else:
-                self.x += (k1[0] + k4[0]) / 6 + (k2[0] + k3[0]) / 3
-                self.v += (k1[1] + k4[1]) / 6 + (k2[1] + k3[1]) / 3
-                self.t += self.dt
+                self.x = self.x + (k1[0] + k4[0]) / 6 + (k2[0] + k3[0]) / 3
+                self.v = self.v + (k1[1] + k4[1]) / 6 + (k2[1] + k3[1]) / 3
+                self.t = self.t + self.dt
+
 
     def RK4_trajectory(self):  # calculate trajectory as before
         # need to reinitialize if you want to call this method and others
@@ -76,12 +78,6 @@ class Rotating_Projectile(Particle):
 
         super().__init__(x0, y0, z0, u0, v0, w0, tf, dt)  # call initialization method of the super (parent) class
 
-    def Reynolds(self, speed):
-        dynamicViscosity = 1.516e-5
-        Re = 2 * self.r * speed / dynamicViscosity
-        return Re
-        # ranges from 0 to approx 3.1e5 (0, 150mph)
-
     def F(self, x, v, t):
         g = 9.8
         mod_v = np.sqrt(np.sum(v ** 2))
@@ -92,7 +88,7 @@ class Rotating_Projectile(Particle):
         if mod_v < 1e-6:  # no reason to calculate drag or lift for very small velocities.
             return Fg
 
-        drag = -(0.5 * self.A * p * v * mod_v) / 2  # Drag force = -0.5(A*p*v^2)/2 (opposite of velocity)
+        drag = -(0.53 * self.A * p * v * mod_v) / 2  # Drag force = -0.53(A*p*v^2)/2 (opposite of velocity)
 
         if mod_omega > 0:
             lift_coeff = 1 / (2 + mod_v / (mod_omega * self.r))  # scalar coefficient of lift force
